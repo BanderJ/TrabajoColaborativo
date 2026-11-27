@@ -5,14 +5,15 @@ No sabe nada de HTML ni de botones.
 """
 from datetime import date
 
-from models.db import conectar, consultar
+from models.db import consultar, ejecutar
 from models.errores import ReglaDeNegocio
 
+# Los géneros que se pueden elegir en el formulario
 GENEROS = ("Novela", "Cuento", "Poesía", "Ensayo", "Historia", "Ciencia", "Tecnología", "Infantil")
 
-# Cada libro junto con su préstamo abierto (si lo tiene) y cuántas veces se prestó
+# Cada libro (todas sus columnas, l.*) junto con su préstamo abierto (si lo tiene) y cuántas veces se prestó
 _CONSULTA = """
-    SELECT l.id, l.titulo, l.autor, l.anio, l.genero, l.creado_en,
+    SELECT l.*,
            p.id AS prestamo_id, p.prestado_en, p.vence_en,
            (p.vence_en - current_date) AS dias_restantes,
            r.id AS lector_id, r.nombre AS lector,
@@ -101,20 +102,15 @@ class Libro:
     @staticmethod
     def actualizar(libro_id, datos):
         cambios = ", ".join(f"{campo} = %s" for campo in Libro.CAMPOS)
-        consultar(
-            f"UPDATE libros SET {cambios} WHERE id = %s RETURNING id",
+        ejecutar(
+            f"UPDATE libros SET {cambios} WHERE id = %s",
             [datos[campo] for campo in Libro.CAMPOS] + [libro_id],
         )
 
     @staticmethod
     def eliminar(libro_id):
-        """Regla: un libro con historial de préstamos no se borra, para no perder ese historial."""
-        with conectar() as con:
-            usado = con.execute(
-                "SELECT COUNT(*) AS n FROM prestamos WHERE libro_id = %s", (libro_id,)
-            ).fetchone()["n"]
-            if usado:
-                raise ReglaDeNegocio(
-                    f"Este libro tiene {usado} préstamo(s) registrados: no se puede borrar sin perder el historial."
-                )
-            con.execute("DELETE FROM libros WHERE id = %s", (libro_id,))
+        libro = Libro.obtener(libro_id)
+        # Regla: un libro con préstamos no se borra, para no perder el historial
+        if libro["veces_prestado"]:
+            raise ReglaDeNegocio("Este libro tiene préstamos registrados: no se puede borrar sin perder el historial.")
+        ejecutar("DELETE FROM libros WHERE id = %s", (libro_id,))

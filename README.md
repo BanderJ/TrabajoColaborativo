@@ -52,13 +52,28 @@ En modo desarrollo la página se recarga sola cuando guardas un archivo o cambia
 ## Cómo se trabaja en equipo
 
 1. **Fetch origin** y **Pull origin** para traer lo último de `main`.
-2. **Current branch › New branch** con el nombre `feature/lo-que-haces`.
+2. **Current branch › New branch** con el nombre `tunombre/lo-que-haces` (por ejemplo `ana/color-verde`). La barra lateral de la app muestra quién está trabajando y en qué rama.
 3. Haz tus cambios y pruébalos en tu página local.
-4. **Commit to feature/…** con un mensaje que diga qué hiciste.
+4. **Commit to tunombre/…** con un mensaje que diga qué hiciste.
 5. **Publish branch** (o **Push origin** si ya estaba publicada).
 6. **Branch › Create pull request**, que alguien lo revise y **Merge pull request**.
 
 Si tu cambio necesita otra columna o tabla, agrégala con un archivo nuevo en `db/migraciones/` (el siguiente número). Nunca edites una migración que ya está en `main`.
+
+## Ejercicios para la clase
+
+Cada ejercicio es un cambio chico en **un solo archivo**, para que el diff en GitHub Desktop se entienda de un vistazo. La página se recarga sola al guardar, al cambiar de rama y al hacer pull.
+
+| # | Qué se aprende | Cambio que se hace | Archivo |
+|---|---|---|---|
+| 1 | Rama, commit y **cambiar de rama** | Cambiar el color de `--acento` (por ejemplo a `#2E7D32`). Al volver a `main` en GitHub Desktop, la app vuelve a ser naranja | `static/css/estilos.css` |
+| 2 | **Push**, **Pull Request** y merge | Agregar un género a la lista `GENEROS`: aparece en el formulario de libros | `models/libro.py` |
+| 3 | **Pull**: traer el trabajo de otros | Después del merge del ejercicio 2, el resto hace *Pull origin* y ve el género nuevo sin tocar nada | — |
+| 4 | **Conflicto** y cómo resolverlo | Dos personas cambian `MAX_PRESTAMOS = 3` a valores distintos, cada una en su rama. El segundo Pull Request choca | `models/lector.py` |
+| 5 | Cambio en las tres capas + **migración** | Agregar la columna *editorial*: `003_editorial.sql` con `ALTER TABLE libros ADD COLUMN editorial VARCHAR(60);`, sumar `"editorial"` a `Libro.CAMPOS` y mostrar el campo en el formulario y en la ficha | `db/migraciones/`, `models/libro.py`, `views/libros/` |
+| 6 | Dos ramas en paralelo **sin conflicto** | Una persona cambia algo en `lectores`, otra en `libros`: cada módulo tiene sus propios archivos | `controllers/`, `views/` |
+
+Al pie de cada pantalla aparecen los archivos que la dibujan, para saber dónde hacer el cambio.
 
 ## Lo que no se sube
 

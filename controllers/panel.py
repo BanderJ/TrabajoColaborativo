@@ -4,6 +4,7 @@ from datetime import date
 from flask import Blueprint, render_template
 
 from models.db import migraciones_aplicadas
+from models.lector import Lector
 from models.libro import Libro
 from models.prestamo import Prestamo
 
@@ -20,4 +21,5 @@ def inicio():
         actividad=Prestamo.actividad_reciente(),
         populares=Libro.mas_prestados(),
         migraciones=migraciones_aplicadas(),
+        max_prestamos=Lector.MAX_PRESTAMOS,
     )

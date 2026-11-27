@@ -4,7 +4,7 @@ Las personas registradas que pueden pedir libros, con su carnet (código).
 """
 import re
 
-from models.db import conectar, consultar
+from models.db import consultar, ejecutar
 from models.errores import ReglaDeNegocio
 
 # Cada lector con sus préstamos: abiertos, vencidos y el total histórico
@@ -61,20 +61,15 @@ class Lector:
 
     @staticmethod
     def actualizar(lector_id, datos):
-        consultar(
-            "UPDATE lectores SET nombre = %s, email = %s WHERE id = %s RETURNING id",
+        ejecutar(
+            "UPDATE lectores SET nombre = %s, email = %s WHERE id = %s",
             (datos["nombre"], datos["email"], lector_id),
         )
 
     @staticmethod
     def eliminar(lector_id):
-        """Regla: un lector con préstamos registrados no se borra."""
-        with conectar() as con:
-            usado = con.execute(
-                "SELECT COUNT(*) AS n FROM prestamos WHERE lector_id = %s", (lector_id,)
-            ).fetchone()["n"]
-            if usado:
-                raise ReglaDeNegocio(
-                    f"Este lector tiene {usado} préstamo(s) en su historial: no se puede borrar."
-                )
-            con.execute("DELETE FROM lectores WHERE id = %s", (lector_id,))
+        lector = Lector.obtener(lector_id)
+        # Regla: un lector con préstamos no se borra
+        if lector["total"]:
+            raise ReglaDeNegocio("Este lector tiene préstamos en su historial: no se puede borrar.")
+        ejecutar("DELETE FROM lectores WHERE id = %s", (lector_id,))

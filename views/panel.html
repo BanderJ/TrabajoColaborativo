@@ -34,7 +34,7 @@
   <a class="indicador" href="{{ url_for('lectores.lista') }}">
     <span class="indicador-nombre">{{ ui.icono("lectores") }}Lectores registrados</span>
     <b>{{ resumen.lectores }}</b>
-    <span class="indicador-pie">Hasta 3 libros por persona</span>
+    <span class="indicador-pie">Hasta {{ max_prestamos }} libros por persona</span>
   </a>
 </section>
 

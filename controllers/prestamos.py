@@ -56,7 +56,7 @@ def devolver(prestamo_id):
     except ReglaDeNegocio as regla:
         flash(str(regla), "error")
     else:
-        tarde = f" con {hecho['dias_tarde']} día(s) de retraso" if hecho["dias_tarde"] else ""
+        tarde = f" con {-hecho['dias_restantes']} día(s) de retraso" if hecho["vencido"] else ""
         flash(f"«{hecho['titulo']}» devuelto{tarde}.", "ok")
     return redirect(destino_seguro(url_for("prestamos.lista")))
 
