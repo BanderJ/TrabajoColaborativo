@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/lector.py · models/prestamo.py", "vista": "views/lectores/detalle.html", "controlador": "controllers/lectores.py"} %}
+{% set abiertos = prestamos | selectattr("devuelto_en", "none") | list %}
+{% set cerrados = prestamos | rejectattr("devuelto_en", "none") | list %}
+{% set puede_pedir = not lector.vencidos and lector.activos < max_prestamos %}
+
+{% block migas %}<a class="migas" href="{{ url_for('lectores.lista') }}">{{ ui.icono("volver") }}Lectores</a>{% endblock %}
+{% block titulo %}{{ lector.nombre }}{% endblock %}
+{% block subtitulo %}<code class="codigo">{{ lector.codigo }}</code> · {{ lector.email or "sin correo" }} · registrado el {{ lector.creado_en | fecha }}{% endblock %}
+{% block acciones %}
+  <a class="boton secundario" href="{{ url_for('lectores.editar', lector_id=lector.id) }}">{{ ui.icono("editar") }}Editar</a>
+  <form method="post" action="{{ url_for('lectores.eliminar', lector_id=lector.id) }}"
+        data-confirmar="¿Eliminar a {{ lector.nombre }}?">
+    <button class="boton peligro">{{ ui.icono("borrar") }}Eliminar</button>
+  </form>
+  {% if puede_pedir %}
+  <a class="boton primario" href="{{ url_for('prestamos.nuevo', lector_id=lector.id) }}">{{ ui.icono("mas") }}Prestarle un libro</a>
+  {% endif %}
+{% endblock %}
+
+{% block contenido %}
+<section class="indicadores tres">
+  <div class="indicador">
+    <span class="indicador-nombre">{{ ui.icono("libro") }}Libros en casa</span>
+    <b>{{ lector.activos }}<small>/{{ max_prestamos }}</small></b>
+    <span class="indicador-pie">{{ max_prestamos - lector.activos }} cupo(s) libre(s)</span>
+  </div>
+  <div class="indicador {{ 'critico' if lector.vencidos }}">
+    <span class="indicador-nombre">{{ ui.icono("alerta") }}Vencidos</span>
+    <b>{{ lector.vencidos }}</b>
+    <span class="indicador-pie">{{ "No puede pedir más hasta devolverlos" if lector.vencidos else "Ninguno" }}</span>
+  </div>
+  <div class="indicador">
+    <span class="indicador-nombre">{{ ui.icono("prestamo") }}Préstamos totales</span>
+    <b>{{ lector.total }}</b>
+    <span class="indicador-pie">{{ cerrados | selectattr("devuelto_tarde") | list | length }} devuelto(s) tarde</span>
+  </div>
+</section>
+
+<section class="tarjeta">
+  <header class="tarjeta-cabecera"><h2>Libros que tiene ahora</h2></header>
+  {% if abiertos %}
+  <table class="tabla">
+    <thead><tr><th>Libro</th><th>Prestado</th><th>Vence</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    {% for p in abiertos %}
+      <tr class="{{ 'fila-critica' if p.vencido }}">
+        <td><a class="libro-celda" href="{{ url_for('libros.detalle', libro_id=p.libro_id) }}">{{ ui.tapa(p) }}<span><b>{{ p.titulo }}</b><small>{{ p.autor }}</small></span></a></td>
+        <td class="numero">{{ p.prestado_en | fecha }}</td>
+        <td class="numero">{{ p.vence_en | fecha }}</td>
+        <td>{{ ui.estado_prestamo(p) }}</td>
+        <td class="derecha">{{ ui.acciones_prestamo(p, max_renovaciones, request.path) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    {{ ui.vacio("No tiene libros prestados") }}
+  {% endif %}
+</section>
+
+<section class="tarjeta">
+  <header class="tarjeta-cabecera"><h2>Historial</h2><span class="nota">{{ cerrados | length }} devoluciones</span></header>
+  {% if cerrados %}
+  <table class="tabla">
+    <thead><tr><th>Libro</th><th>Prestado</th><th>Vencía</th><th>Devuelto</th><th>Resultado</th></tr></thead>
+    <tbody>
+    {% for p in cerrados %}
+      <tr>
+        <td><a class="libro-celda" href="{{ url_for('libros.detalle', libro_id=p.libro_id) }}">{{ ui.tapa(p) }}<span><b>{{ p.titulo }}</b><small>{{ p.autor }}</small></span></a></td>
+        <td class="numero">{{ p.prestado_en | fecha }}</td>
+        <td class="numero">{{ p.vence_en | fecha }}</td>
+        <td class="numero">{{ p.devuelto_en | fecha }}</td>
+        <td>{{ ui.estado_prestamo(p) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    {{ ui.vacio("Todavía no devolvió ningún libro") }}
+  {% endif %}
+</section>
+{% endblock %}

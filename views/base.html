@@ -1,0 +1,93 @@
+{% import "parciales/ui.html" as ui %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titulo_pestana %}{{ self.titulo() | striptags }}{% endblock %} · Biblioteca · {{ rama }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='icono.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+</head>
+<body>
+<div class="app">
+
+  {# ===== MENÚ LATERAL ===== #}
+  <aside class="lateral">
+    <a class="marca" href="{{ url_for('panel.inicio') }}">
+      <span class="logo">{{ ui.icono("libro") }}</span>
+      <span><b>Biblioteca</b><small>Flask · PostgreSQL · MVC</small></span>
+    </a>
+
+    <a class="boton primario ancho" href="{{ url_for('prestamos.nuevo') }}">{{ ui.icono("mas") }}Nuevo préstamo</a>
+
+    <nav class="menu">
+      <a href="{{ url_for('panel.inicio') }}" class="{{ 'activo' if request.blueprint == 'panel' }}">
+        {{ ui.icono("panel") }}<span>Panel</span>
+      </a>
+      <a href="{{ url_for('libros.lista') }}" class="{{ 'activo' if request.blueprint == 'libros' }}">
+        {{ ui.icono("libro") }}<span>Catálogo</span><em>{{ menu.libros }}</em>
+      </a>
+      <a href="{{ url_for('prestamos.lista') }}" class="{{ 'activo' if request.blueprint == 'prestamos' }}">
+        {{ ui.icono("prestamo") }}<span>Préstamos</span>
+        {% if menu.vencidos %}<em class="alarma" title="{{ menu.vencidos }} vencido(s)">{{ menu.vencidos }}</em>{% else %}<em>{{ menu.activos }}</em>{% endif %}
+      </a>
+      <a href="{{ url_for('lectores.lista') }}" class="{{ 'activo' if request.blueprint == 'lectores' }}">
+        {{ ui.icono("lectores") }}<span>Lectores</span><em>{{ menu.lectores }}</em>
+      </a>
+    </nav>
+
+    {# Quién trabaja, en qué rama y con qué base: lo que cambia al hacer checkout #}
+    <div class="entorno">
+      <p class="entorno-titulo">Entorno de trabajo</p>
+      <p class="entorno-quien">{{ persona ~ ' está trabajando' if persona else 'Versión oficial del equipo' }}</p>
+      <span class="pieza rama {{ color_rama }}">{{ ui.icono("rama") }}{{ rama }}</span>
+      <span class="pieza base">{{ ui.icono("base") }}{{ base_de_datos }}</span>
+    </div>
+  </aside>
+
+  {# ===== CONTENIDO DE CADA PANTALLA ===== #}
+  <div class="contenido">
+    <header class="cabecera">
+      <div>
+        {% block migas %}{% endblock %}
+        <h1>{% block titulo %}{% endblock %}</h1>
+        <p class="subtitulo">{% block subtitulo %}{% endblock %}</p>
+      </div>
+      <div class="acciones">{% block acciones %}{% endblock %}</div>
+    </header>
+
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% if mensajes %}
+      <div class="mensajes">
+        {% for tipo, mensaje in mensajes %}
+        <p class="mensaje {{ tipo }}" role="status">{{ ui.icono("check" if tipo == "ok" else "alerta") }}{{ mensaje }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    <main>
+      {% block contenido %}{% endblock %}
+    </main>
+
+    {# Qué archivos del proyecto dibujaron esta pantalla #}
+    {% if capas %}
+    <footer class="capas">
+      <span class="capas-titulo">Esta pantalla en el código</span>
+      <span><b class="m">Modelo</b>{{ capas.modelo }}</span>
+      <span><b class="v">Vista</b>{{ capas.vista }}</span>
+      <span><b class="c">Controlador</b>{{ capas.controlador }}</span>
+    </footer>
+    {% endif %}
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% if config.DEBUG %}
+<script src="{{ url_for('static', filename='js/recarga.js') }}" data-firma="{{ firma }}"></script>
+{% endif %}
+</body>
+</html>

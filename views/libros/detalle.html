@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/libro.py · models/prestamo.py", "vista": "views/libros/detalle.html", "controlador": "controllers/libros.py"} %}
+
+{% block migas %}<a class="migas" href="{{ url_for('libros.lista') }}">{{ ui.icono("volver") }}Catálogo</a>{% endblock %}
+{% block titulo %}{{ libro.titulo }}{% endblock %}
+{% block subtitulo %}{{ libro.autor }}{% endblock %}
+{% block acciones %}
+  <a class="boton secundario" href="{{ url_for('libros.editar', libro_id=libro.id) }}">{{ ui.icono("editar") }}Editar</a>
+  <form method="post" action="{{ url_for('libros.eliminar', libro_id=libro.id) }}"
+        data-confirmar="¿Quitar «{{ libro.titulo }}» del catálogo?">
+    <button class="boton peligro">{{ ui.icono("borrar") }}Eliminar</button>
+  </form>
+{% endblock %}
+
+{% block contenido %}
+<div class="ficha">
+  {{ ui.tapa(libro, "grande") }}
+
+  <div class="ficha-cuerpo">
+    <dl class="datos">
+      <div><dt>Autor</dt><dd>{{ libro.autor }}</dd></div>
+      <div><dt>Año</dt><dd>{{ libro.anio or "—" }}</dd></div>
+      <div><dt>Género</dt><dd>{{ libro.genero or "Sin género" }}</dd></div>
+      <div><dt>Veces prestado</dt><dd>{{ libro.veces_prestado }}</dd></div>
+      <div><dt>En el catálogo desde</dt><dd>{{ libro.creado_en | fecha }}</dd></div>
+    </dl>
+
+    {# ===== ESTADO ACTUAL Y ACCIONES ===== #}
+    {% if libro.prestamo_id %}
+    <section class="tarjeta estado-actual prestado">
+      <div>
+        <p class="nota">Prestado a</p>
+        <p class="grande"><a href="{{ url_for('lectores.detalle', lector_id=libro.lector_id) }}">{{ libro.lector }}</a></p>
+        <p>Desde el {{ libro.prestado_en | fecha }} · vence el <b>{{ libro.vence_en | fecha }}</b></p>
+        <p class="separado">{{ ui.estado_prestamo(libro) }}</p>
+      </div>
+      {% set abierto = historial | selectattr("devuelto_en", "none") | first %}
+      {{ ui.acciones_prestamo(abierto, max_renovaciones, request.path) }}
+    </section>
+    {% else %}
+    <section class="tarjeta estado-actual">
+      <div>
+        <p class="nota">Estado</p>
+        <p class="grande"><span class="estado disponible">{{ ui.icono("check") }}Disponible</span></p>
+      </div>
+      <form class="prestar-aqui" method="post" action="{{ url_for('prestamos.nuevo') }}">
+        <input type="hidden" name="libro_id" value="{{ libro.id }}">
+        <input type="hidden" name="volver" value="{{ request.path }}">
+        <label class="campo">
+          <span class="etiqueta-campo">Prestar a</span>
+          <select name="lector_id" required>
+            <option value="">Elige un lector…</option>
+            {% for r in lectores %}
+              {% set bloqueado = r.vencidos or r.activos >= max_prestamos %}
+              <option value="{{ r.id }}" {{ 'disabled' if bloqueado }}>
+                {{ r.nombre }} · {{ r.codigo }}{% if r.vencidos %} (tiene vencidos){% elif r.activos >= max_prestamos %} (al límite){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="campo">
+          <span class="etiqueta-campo">Plazo</span>
+          <select name="dias">
+            {% for d in plazos %}<option value="{{ d }}" {{ 'selected' if d == plazo_normal }}>{{ d }} días</option>{% endfor %}
+          </select>
+        </label>
+        <button class="boton primario">{{ ui.icono("prestamo") }}Prestar</button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+</div>
+
+{# ===== HISTORIAL ===== #}
+<section class="tarjeta">
+  <header class="tarjeta-cabecera"><h2>Historial de préstamos</h2><span class="nota">{{ historial | length }} en total</span></header>
+  {% if historial %}
+  <table class="tabla">
+    <thead><tr><th>Lector</th><th>Prestado</th><th>Vencía</th><th>Devuelto</th><th>Resultado</th></tr></thead>
+    <tbody>
+    {% for p in historial %}
+      <tr>
+        <td><a class="lector-celda" href="{{ url_for('lectores.detalle', lector_id=p.lector_id) }}">{{ ui.iniciales(p.lector) }}<span><b>{{ p.lector }}</b><small>{{ p.codigo }}</small></span></a></td>
+        <td class="numero">{{ p.prestado_en | fecha }}</td>
+        <td class="numero">{{ p.vence_en | fecha }}</td>
+        <td class="numero">{{ p.devuelto_en | fecha if p.devuelto_en else "—" }}</td>
+        <td>{{ ui.estado_prestamo(p) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    {{ ui.vacio("Nunca se prestó", "Este libro todavía no salió de la biblioteca.") }}
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+
+{% block titulo %}No encontramos esa página{% endblock %}
+{% block subtitulo %}Puede que el libro o el lector se haya eliminado, o que el enlace esté mal escrito.{% endblock %}
+
+{% block contenido %}
+<section class="tarjeta">
+  {{ ui.vacio("Error 404", "Vuelve al panel para seguir trabajando.") }}
+  <p class="centro"><a class="boton primario" href="{{ url_for('panel.inicio') }}">{{ ui.icono("panel") }}Ir al panel</a></p>
+</section>
+{% endblock %}

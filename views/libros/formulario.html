@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/libro.py", "vista": "views/libros/formulario.html", "controlador": "controllers/libros.py"} %}
+{% set editando = libro.id is defined %}
+
+{% block migas %}
+  {% if editando %}<a class="migas" href="{{ url_for('libros.detalle', libro_id=libro.id) }}">{{ ui.icono("volver") }}{{ libro.titulo }}</a>
+  {% else %}<a class="migas" href="{{ url_for('libros.lista') }}">{{ ui.icono("volver") }}Catálogo</a>{% endif %}
+{% endblock %}
+{% block titulo %}{{ "Editar libro" if editando else "Agregar libro" }}{% endblock %}
+{% block subtitulo %}{{ "Corrige los datos del libro." if editando else "Registra un libro nuevo en el catálogo." }}{% endblock %}
+
+{% block contenido %}
+<form class="tarjeta formulario" method="post" novalidate>
+  <div class="campos dos">
+    {{ ui.campo("titulo", "Título", libro.titulo, errores, requerido=True, extra='maxlength="120" autofocus') }}
+    {{ ui.campo("autor", "Autor", libro.autor, errores, requerido=True, extra='maxlength="80"') }}
+    {{ ui.campo("anio", "Año de publicación", libro.anio, errores, tipo="number", ayuda="Opcional", extra='min="1000" max="2100"') }}
+    <label class="campo {{ 'con-error' if errores.genero }}">
+      <span class="etiqueta-campo">Género</span>
+      <select name="genero">
+        <option value="">Sin género</option>
+        {% for g in generos %}<option {{ 'selected' if g == libro.genero }}>{{ g }}</option>{% endfor %}
+      </select>
+      {% if errores.genero %}<span class="error-campo">{{ errores.genero }}</span>{% endif %}
+    </label>
+  </div>
+  <div class="pie-formulario">
+    <a class="boton fantasma" href="{{ url_for('libros.detalle', libro_id=libro.id) if editando else url_for('libros.lista') }}">Cancelar</a>
+    <button class="boton primario">{{ ui.icono("check") }}{{ "Guardar cambios" if editando else "Agregar al catálogo" }}</button>
+  </div>
+</form>
+{% endblock %}

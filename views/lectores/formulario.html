@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/lector.py", "vista": "views/lectores/formulario.html", "controlador": "controllers/lectores.py"} %}
+{% set editando = lector.id is defined %}
+
+{% block migas %}
+  {% if editando %}<a class="migas" href="{{ url_for('lectores.detalle', lector_id=lector.id) }}">{{ ui.icono("volver") }}{{ lector.nombre }}</a>
+  {% else %}<a class="migas" href="{{ url_for('lectores.lista') }}">{{ ui.icono("volver") }}Lectores</a>{% endif %}
+{% endblock %}
+{% block titulo %}{{ "Editar lector" if editando else "Registrar lector" }}{% endblock %}
+{% block subtitulo %}
+  {%- if editando %}Carnet <code class="codigo">{{ lector.codigo }}</code>{% else %}El código de carnet se asigna solo al guardar.{% endif -%}
+{% endblock %}
+
+{% block contenido %}
+<form class="tarjeta formulario" method="post" novalidate>
+  <div class="campos dos">
+    {{ ui.campo("nombre", "Nombre completo", lector.nombre, errores, requerido=True, extra='maxlength="60" autofocus') }}
+    {{ ui.campo("email", "Correo", lector.email, errores, tipo="email", ayuda="Opcional, para avisar de vencimientos", extra='maxlength="120"') }}
+  </div>
+  <div class="pie-formulario">
+    <a class="boton fantasma" href="{{ url_for('lectores.detalle', lector_id=lector.id) if editando else url_for('lectores.lista') }}">Cancelar</a>
+    <button class="boton primario">{{ ui.icono("check") }}{{ "Guardar cambios" if editando else "Registrar" }}</button>
+  </div>
+</form>
+{% endblock %}

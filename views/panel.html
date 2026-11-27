@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/prestamo.py · models/libro.py", "vista": "views/panel.html", "controlador": "controllers/panel.py"} %}
+
+{% block titulo %}Panel{% endblock %}
+{% block subtitulo %}Resumen de la biblioteca al {{ hoy | fecha }}{% endblock %}
+{% block acciones %}
+  <a class="boton secundario" href="{{ url_for('libros.nuevo') }}">{{ ui.icono("libro") }}Agregar libro</a>
+  <a class="boton primario" href="{{ url_for('prestamos.nuevo') }}">{{ ui.icono("mas") }}Nuevo préstamo</a>
+{% endblock %}
+
+{% block contenido %}
+
+{# ===== INDICADORES ===== #}
+<section class="indicadores">
+  <a class="indicador" href="{{ url_for('libros.lista') }}">
+    <span class="indicador-nombre">{{ ui.icono("libro") }}Libros en catálogo</span>
+    <b>{{ resumen.libros }}</b>
+    <span class="indicador-pie">{{ resumen.disponibles }} disponibles para prestar</span>
+  </a>
+  <a class="indicador" href="{{ url_for('prestamos.lista') }}">
+    <span class="indicador-nombre">{{ ui.icono("prestamo") }}Préstamos activos</span>
+    <b>{{ resumen.activos }}</b>
+    <span class="indicador-pie">{{ resumen.del_mes }} prestados este mes</span>
+  </a>
+  <a class="indicador {{ 'critico' if resumen.vencidos }}" href="{{ url_for('prestamos.lista', vista='vencidos') }}">
+    <span class="indicador-nombre">{{ ui.icono("alerta") }}Vencidos</span>
+    <b>{{ resumen.vencidos }}</b>
+    <span class="indicador-pie">
+      {%- if resumen.vencidos %}Requieren seguimiento{% else %}Todo al día{% endif %}
+      {%- if resumen.por_vencer %} · {{ resumen.por_vencer }} vencen en 3 días{% endif -%}
+    </span>
+  </a>
+  <a class="indicador" href="{{ url_for('lectores.lista') }}">
+    <span class="indicador-nombre">{{ ui.icono("lectores") }}Lectores registrados</span>
+    <b>{{ resumen.lectores }}</b>
+    <span class="indicador-pie">Hasta 3 libros por persona</span>
+  </a>
+</section>
+
+<div class="rejilla-panel">
+
+  {# ===== VENCIMIENTOS ===== #}
+  <section class="tarjeta">
+    <header class="tarjeta-cabecera">
+      <h2>Próximos vencimientos</h2>
+      <a class="enlace" href="{{ url_for('prestamos.lista') }}">Ver todos {{ ui.icono("flecha") }}</a>
+    </header>
+    {% if proximos %}
+    <table class="tabla compacta">
+      <thead><tr><th>Libro</th><th>Lector</th><th>Vence</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+      {% for p in proximos %}
+        <tr>
+          <td>
+            <a class="libro-celda" href="{{ url_for('libros.detalle', libro_id=p.libro_id) }}">
+              {{ ui.tapa(p) }}<span><b>{{ p.titulo }}</b></span>
+            </a>
+          </td>
+          <td class="numero"><a href="{{ url_for('lectores.detalle', lector_id=p.lector_id) }}">{{ p.lector }}</a></td>
+          <td class="numero">{{ p.vence_en | fecha }}</td>
+          <td>{{ ui.estado_prestamo(p) }}</td>
+          <td class="derecha">
+            <form method="post" action="{{ url_for('prestamos.devolver', prestamo_id=p.id) }}">
+              <input type="hidden" name="volver" value="{{ request.path }}">
+              <button class="boton secundario chico">{{ ui.icono("devolver") }}Devolver</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      {{ ui.vacio("No hay libros prestados", "Cuando prestes uno, aquí verás cuándo debe volver.") }}
+    {% endif %}
+  </section>
+
+  {# ===== MÁS PRESTADOS ===== #}
+  <section class="tarjeta">
+    <header class="tarjeta-cabecera"><h2>Los más pedidos</h2><span class="nota">préstamos por libro</span></header>
+    {% if populares %}
+    {% set maximo = populares[0].veces %}
+    <ol class="ranking">
+      {% for libro in populares %}
+      <li>
+        <a href="{{ url_for('libros.detalle', libro_id=libro.id) }}" title="{{ libro.titulo }}: {{ libro.veces }} préstamo(s)">
+          <span class="ranking-texto"><b>{{ libro.titulo }}</b><em>{{ libro.veces }}</em></span>
+          <span class="barra"><span style="width: {{ (libro.veces / maximo * 100) | round }}%"></span></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+      {{ ui.vacio("Todavía no hay préstamos") }}
+    {% endif %}
+  </section>
+
+  {# ===== ACTIVIDAD ===== #}
+  <section class="tarjeta">
+    <header class="tarjeta-cabecera"><h2>Actividad reciente</h2></header>
+    <ul class="actividad">
+      {% for e in actividad %}
+      <li class="{{ e.tipo }}">
+        <span class="punto">{{ ui.icono("prestamo" if e.tipo == "prestamo" else "devolver") }}</span>
+        <p>
+          <a href="{{ url_for('lectores.detalle', lector_id=e.lector_id) }}">{{ e.lector }}</a>
+          {{ "se llevó" if e.tipo == "prestamo" else "devolvió" }}
+          <a href="{{ url_for('libros.detalle', libro_id=e.libro_id) }}"><b>{{ e.titulo }}</b></a>
+        </p>
+        <time>{{ e.cuando | hace }}</time>
+      </li>
+      {% else %}
+      <li>{{ ui.vacio("Sin movimientos todavía") }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {# ===== CÓMO ESTÁ HECHO (para la demo de Git) ===== #}
+  <section class="tarjeta oscura">
+    <header class="tarjeta-cabecera"><h2>La base de datos de esta rama</h2></header>
+    <p class="nota-clara">Git comparte el código y las migraciones; cada integrante tiene su propia base. Al hacer <code>pull</code>, las migraciones nuevas se aplican solas.</p>
+    <ul class="migraciones">
+      {% for m in migraciones %}
+      <li>{{ ui.icono("archivo") }}<code>{{ m.nombre }}</code><time>{{ m.aplicada_en | hace }}</time></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+</div>
+{% endblock %}

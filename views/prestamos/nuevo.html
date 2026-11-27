@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/prestamo.py · models/lector.py", "vista": "views/prestamos/nuevo.html", "controlador": "controllers/prestamos.py"} %}
+
+{% block migas %}<a class="migas" href="{{ url_for('prestamos.lista') }}">{{ ui.icono("volver") }}Préstamos</a>{% endblock %}
+{% block titulo %}Nuevo préstamo{% endblock %}
+{% block subtitulo %}Elige el libro, quién se lo lleva y por cuánto tiempo.{% endblock %}
+
+{% block contenido %}
+<div class="dos-columnas">
+  <form class="tarjeta formulario" method="post">
+    <label class="campo">
+      <span class="etiqueta-campo">Libro <i>*</i></span>
+      <select name="libro_id" required>
+        <option value="">Elige un libro disponible…</option>
+        {% for l in libros %}
+        <option value="{{ l.id }}" {{ 'selected' if l.id == elegido.libro_id }}>{{ l.titulo }} — {{ l.autor }}</option>
+        {% endfor %}
+      </select>
+      <span class="ayuda">{{ libros | length }} libros disponibles. Los prestados no aparecen.</span>
+    </label>
+
+    <label class="campo">
+      <span class="etiqueta-campo">Lector <i>*</i></span>
+      <select name="lector_id" required>
+        <option value="">Elige un lector…</option>
+        {% for r in lectores %}
+          {% set bloqueado = r.vencidos or r.activos >= max_prestamos %}
+          <option value="{{ r.id }}" {{ 'selected' if r.id == elegido.lector_id }} {{ 'disabled' if bloqueado }}>
+            {{ r.nombre }} · {{ r.codigo }} · {{ r.activos }}/{{ max_prestamos }} libros
+            {%- if r.vencidos %} · tiene vencidos{% elif r.activos >= max_prestamos %} · al límite{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="ayuda">¿No está en la lista? <a href="{{ url_for('lectores.nuevo') }}">Registra un lector nuevo</a>.</span>
+    </label>
+
+    <fieldset class="campo">
+      <legend class="etiqueta-campo">Plazo de devolución</legend>
+      <div class="opciones">
+        {% for d in plazos %}
+        <label class="opcion">
+          <input type="radio" name="dias" value="{{ d }}" {{ 'checked' if d == elegido.dias }}>
+          <span><b>{{ d }} días</b><small>{{ "Consulta rápida" if d == 7 else ("Lo normal" if d == 14 else "Lectura larga") }}</small></span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="pie-formulario">
+      <a class="boton fantasma" href="{{ url_for('prestamos.lista') }}">Cancelar</a>
+      <button class="boton primario">{{ ui.icono("prestamo") }}Registrar préstamo</button>
+    </div>
+  </form>
+
+  <aside class="tarjeta reglas">
+    <h2>Reglas de la biblioteca</h2>
+    <ul>
+      <li>{{ ui.icono("libro") }}<span>Un libro solo puede estar prestado a una persona a la vez.</span></li>
+      <li>{{ ui.icono("lectores") }}<span>Cada lector puede tener hasta <b>{{ max_prestamos }} libros</b> al mismo tiempo.</span></li>
+      <li>{{ ui.icono("alerta") }}<span>Quien tiene un libro <b>vencido</b> no puede pedir otro hasta devolverlo.</span></li>
+      <li>{{ ui.icono("renovar") }}<span>Un préstamo se puede renovar 2 veces, 7 días cada vez, si todavía no venció.</span></li>
+    </ul>
+    <p class="nota">Estas reglas viven en el <b>Modelo</b> (<code>models/prestamo.py</code>), no en la pantalla: se cumplen aunque alguien salte el formulario.</p>
+  </aside>
+</div>
+{% endblock %}

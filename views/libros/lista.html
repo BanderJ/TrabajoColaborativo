@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/libro.py", "vista": "views/libros/lista.html", "controlador": "controllers/libros.py"} %}
+
+{% block titulo %}Catálogo{% endblock %}
+{% block subtitulo %}{{ libros | length }} {{ "libro" if libros | length == 1 else "libros" }}{% if filtros.q or filtros.estado or filtros.genero %} con estos filtros{% endif %}{% endblock %}
+{% block acciones %}
+  <a class="boton primario" href="{{ url_for('libros.nuevo') }}">{{ ui.icono("mas") }}Agregar libro</a>
+{% endblock %}
+
+{% block contenido %}
+<section class="tarjeta">
+  <form class="filtros" method="get">
+    <label class="buscador">
+      {{ ui.icono("buscar") }}
+      <input type="search" name="q" value="{{ filtros.q }}" placeholder="Buscar por título o autor…" aria-label="Buscar">
+    </label>
+    <select name="genero" onchange="this.form.submit()" aria-label="Género">
+      <option value="">Todos los géneros</option>
+      {% for g in generos %}<option {{ 'selected' if g == filtros.genero }}>{{ g }}</option>{% endfor %}
+    </select>
+    <input type="hidden" name="estado" value="{{ filtros.estado }}">
+    <div class="segmentos" role="group" aria-label="Estado">
+      {% for valor, nombre in [("", "Todos"), ("disponible", "Disponibles"), ("prestado", "Prestados"), ("vencido", "Vencidos")] %}
+      <a class="{{ 'activo' if filtros.estado == valor }}"
+         href="{{ url_for('libros.lista', q=filtros.q or None, genero=filtros.genero or None, estado=valor or None) }}">{{ nombre }}</a>
+      {% endfor %}
+    </div>
+  </form>
+
+  {% if libros %}
+  <table class="tabla">
+    <thead>
+      <tr><th>Libro</th><th>Género</th><th class="numero">Año</th><th>Estado</th><th class="numero">Préstamos</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for libro in libros %}
+      <tr>
+        <td>
+          <a class="libro-celda" href="{{ url_for('libros.detalle', libro_id=libro.id) }}">
+            {{ ui.tapa(libro) }}<span><b>{{ libro.titulo }}</b><small>{{ libro.autor }}</small></span>
+          </a>
+        </td>
+        <td>{% if libro.genero %}<span class="etiqueta-gris">{{ libro.genero }}</span>{% else %}<span class="tenue">—</span>{% endif %}</td>
+        <td class="numero">{{ libro.anio or "—" }}</td>
+        <td>
+          {% if libro.prestamo_id %}
+            {{ ui.estado_prestamo(libro) }}
+            <small class="debajo">con <a href="{{ url_for('lectores.detalle', lector_id=libro.lector_id) }}">{{ libro.lector }}</a></small>
+          {% else %}
+            <span class="estado disponible">{{ ui.icono("check") }}Disponible</span>
+          {% endif %}
+        </td>
+        <td class="numero">{{ libro.veces_prestado }}</td>
+        <td class="derecha"><a class="boton fantasma chico" href="{{ url_for('libros.detalle', libro_id=libro.id) }}">Ver {{ ui.icono("flecha") }}</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    {{ ui.vacio("Ningún libro coincide", "Prueba con otra búsqueda o quita los filtros.") }}
+  {% endif %}
+</section>
+{% endblock %}

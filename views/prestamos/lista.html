@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/prestamo.py", "vista": "views/prestamos/lista.html", "controlador": "controllers/prestamos.py"} %}
+
+{% block titulo %}Préstamos{% endblock %}
+{% block subtitulo %}{{ menu.activos }} abiertos · {{ menu.vencidos }} vencidos · {{ menu.por_vencer }} vencen en los próximos 3 días{% endblock %}
+{% block acciones %}
+  <a class="boton primario" href="{{ url_for('prestamos.nuevo') }}">{{ ui.icono("mas") }}Nuevo préstamo</a>
+{% endblock %}
+
+{% block contenido %}
+<section class="tarjeta">
+  <nav class="pestanas">
+    {% for valor, nombre, cuenta in [("activos", "Activos", menu.activos), ("vencidos", "Vencidos", menu.vencidos), ("historial", "Historial", None)] %}
+    <a class="{{ 'activo' if vista == valor }}" href="{{ url_for('prestamos.lista', vista=valor, q=q or None) }}">
+      {{ nombre }}{% if cuenta is not none %}<em class="{{ 'alarma' if valor == 'vencidos' and cuenta }}">{{ cuenta }}</em>{% endif %}
+    </a>
+    {% endfor %}
+  </nav>
+
+  <form class="filtros" method="get">
+    <input type="hidden" name="vista" value="{{ vista }}">
+    <label class="buscador">
+      {{ ui.icono("buscar") }}
+      <input type="search" name="q" value="{{ q }}" placeholder="Buscar por libro, lector o código de carnet…" aria-label="Buscar">
+    </label>
+  </form>
+
+  {% if prestamos %}
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Libro</th><th>Lector</th><th>Prestado</th>
+        {% if vista == "historial" %}<th>Vencía</th><th>Devuelto</th><th>Resultado</th>
+        {% else %}<th>Vence</th><th>Estado</th><th></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in prestamos %}
+      <tr class="{{ 'fila-critica' if p.vencido }}">
+        <td>
+          <a class="libro-celda" href="{{ url_for('libros.detalle', libro_id=p.libro_id) }}">
+            {{ ui.tapa(p) }}<span><b>{{ p.titulo }}</b><small>{{ p.autor }}</small></span>
+          </a>
+        </td>
+        <td><a class="lector-celda" href="{{ url_for('lectores.detalle', lector_id=p.lector_id) }}">{{ ui.iniciales(p.lector) }}<span><b>{{ p.lector }}</b><small>{{ p.codigo }}</small></span></a></td>
+        <td class="numero">{{ p.prestado_en | fecha }}</td>
+        <td class="numero">
+          {{ p.vence_en | fecha }}
+          {% if p.renovaciones %}<small class="debajo">renovado {{ p.renovaciones }}×</small>{% endif %}
+        </td>
+        {% if vista == "historial" %}
+          <td class="numero">{{ p.devuelto_en | fecha }}</td>
+          <td>{{ ui.estado_prestamo(p) }}</td>
+        {% else %}
+          <td>{{ ui.estado_prestamo(p) }}</td>
+          <td class="derecha">{{ ui.acciones_prestamo(p, max_renovaciones, request.full_path) }}</td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% elif vista == "vencidos" %}
+    {{ ui.vacio("No hay préstamos vencidos", "Todos los libros prestados están dentro de su plazo.") }}
+  {% else %}
+    {{ ui.vacio("No hay préstamos para mostrar", "Prueba con otra búsqueda o registra un préstamo nuevo.") }}
+  {% endif %}
+</section>
+{% endblock %}

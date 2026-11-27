@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% import "parciales/ui.html" as ui %}
+{% set capas = {"modelo": "models/lector.py", "vista": "views/lectores/lista.html", "controlador": "controllers/lectores.py"} %}
+
+{% block titulo %}Lectores{% endblock %}
+{% block subtitulo %}{{ lectores | length }} {{ "persona registrada" if lectores | length == 1 else "personas registradas" }}{% endblock %}
+{% block acciones %}
+  <a class="boton primario" href="{{ url_for('lectores.nuevo') }}">{{ ui.icono("mas") }}Registrar lector</a>
+{% endblock %}
+
+{% block contenido %}
+<section class="tarjeta">
+  <form class="filtros" method="get">
+    <label class="buscador">
+      {{ ui.icono("buscar") }}
+      <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre, código o correo…" aria-label="Buscar">
+    </label>
+  </form>
+
+  {% if lectores %}
+  <table class="tabla">
+    <thead><tr><th>Lector</th><th>Carnet</th><th>Libros en casa</th><th class="numero">Préstamos totales</th><th>Puede pedir</th><th></th></tr></thead>
+    <tbody>
+    {% for r in lectores %}
+      <tr>
+        <td>
+          <a class="lector-celda" href="{{ url_for('lectores.detalle', lector_id=r.id) }}">
+            {{ ui.iniciales(r.nombre) }}<span><b>{{ r.nombre }}</b><small>{{ r.email or "sin correo" }}</small></span>
+          </a>
+        </td>
+        <td><code class="codigo">{{ r.codigo }}</code></td>
+        <td>
+          <span class="cupo" title="{{ r.activos }} de {{ max_prestamos }}">
+            {% for i in range(max_prestamos) %}<i class="{{ 'lleno' if i < r.activos }}"></i>{% endfor %}
+          </span>
+          <small class="tenue">{{ r.activos }}/{{ max_prestamos }}</small>
+        </td>
+        <td class="numero">{{ r.total }}</td>
+        <td>
+          {% if r.vencidos %}<span class="estado critico">{{ ui.icono("alerta") }}No: {{ r.vencidos }} vencido{{ "s" if r.vencidos > 1 }}</span>
+          {% elif r.activos >= max_prestamos %}<span class="estado atencion">{{ ui.icono("reloj") }}No: al límite</span>
+          {% else %}<span class="estado bien">{{ ui.icono("check") }}Sí</span>{% endif %}
+        </td>
+        <td class="derecha"><a class="boton fantasma chico" href="{{ url_for('lectores.detalle', lector_id=r.id) }}">Ver {{ ui.icono("flecha") }}</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    {{ ui.vacio("Nadie coincide con la búsqueda") }}
+  {% endif %}
+</section>
+{% endblock %}

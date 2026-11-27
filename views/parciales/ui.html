@@ -1,0 +1,117 @@
+{# Piezas reutilizables de la interfaz. Se importan con:
+   {% import "parciales/ui.html" as ui %}  y se usan como  {{ ui.icono("libro") }} #}
+
+{% macro icono(nombre, clase="") -%}
+<svg class="icono {{ clase }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{%- if nombre == "panel" -%}
+  <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+{%- elif nombre == "libro" -%}
+  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+{%- elif nombre == "prestamo" -%}
+  <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+{%- elif nombre == "lectores" -%}
+  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+{%- elif nombre == "mas" -%}
+  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+{%- elif nombre == "buscar" -%}
+  <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+{%- elif nombre == "rama" -%}
+  <line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>
+{%- elif nombre == "base" -%}
+  <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+{%- elif nombre == "alerta" -%}
+  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+{%- elif nombre == "reloj" -%}
+  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+{%- elif nombre == "check" -%}
+  <polyline points="20 6 9 17 4 12"/>
+{%- elif nombre == "editar" -%}
+  <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+{%- elif nombre == "borrar" -%}
+  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+{%- elif nombre == "devolver" -%}
+  <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+{%- elif nombre == "renovar" -%}
+  <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+{%- elif nombre == "flecha" -%}
+  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+{%- elif nombre == "volver" -%}
+  <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+{%- elif nombre == "archivo" -%}
+  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+{%- endif -%}
+</svg>
+{%- endmacro %}
+
+
+{# Tapa del libro dibujada con CSS: el color sale del id, así cada libro conserva el suyo #}
+{% macro tapa(libro, tamano="mini") -%}
+<div class="tapa {{ tamano }} t{{ (libro.libro_id or libro.id) % 8 }}" aria-hidden="true">
+  {%- if tamano == "mini" -%}
+    <span>{{ libro.titulo[:1] }}</span>
+  {%- else -%}
+    <b>{{ libro.titulo }}</b><small>{{ libro.autor }}</small>
+  {%- endif -%}
+</div>
+{%- endmacro %}
+
+
+{# Estado de un préstamo: siempre con texto e ícono, nunca solo color #}
+{% macro estado_prestamo(p) -%}
+{%- if p.devuelto_en -%}
+  {%- if p.devuelto_tarde -%}
+    <span class="estado aviso-suave">{{ icono("reloj") }}Devuelto tarde</span>
+  {%- else -%}
+    <span class="estado neutro">{{ icono("check") }}Devuelto a tiempo</span>
+  {%- endif -%}
+{%- elif p.dias_restantes < 0 -%}
+  <span class="estado critico">{{ icono("alerta") }}Vencido hace {{ -p.dias_restantes }} {{ "día" if p.dias_restantes == -1 else "días" }}</span>
+{%- elif p.dias_restantes == 0 -%}
+  <span class="estado atencion">{{ icono("reloj") }}Vence hoy</span>
+{%- elif p.dias_restantes <= 3 -%}
+  <span class="estado atencion">{{ icono("reloj") }}Vence en {{ p.dias_restantes }} {{ "día" if p.dias_restantes == 1 else "días" }}</span>
+{%- else -%}
+  <span class="estado bien">{{ icono("check") }}Al día · {{ p.dias_restantes }} días</span>
+{%- endif -%}
+{%- endmacro %}
+
+
+{# Botones Renovar / Devolver de un préstamo abierto. `volver` = a qué página regresar #}
+{% macro acciones_prestamo(p, max_renovaciones, volver) -%}
+<div class="acciones-fila">
+  {% if not p.vencido and p.renovaciones < max_renovaciones %}
+  <form method="post" action="{{ url_for('prestamos.renovar', prestamo_id=p.id) }}">
+    <input type="hidden" name="volver" value="{{ volver }}">
+    <button class="boton fantasma chico" title="Suma 7 días al plazo ({{ p.renovaciones }}/{{ max_renovaciones }} renovaciones usadas)">{{ icono("renovar") }}Renovar</button>
+  </form>
+  {% endif %}
+  <form method="post" action="{{ url_for('prestamos.devolver', prestamo_id=p.id) }}">
+    <input type="hidden" name="volver" value="{{ volver }}">
+    <button class="boton secundario chico">{{ icono("devolver") }}Devolver</button>
+  </form>
+</div>
+{%- endmacro %}
+
+
+{% macro iniciales(nombre) -%}
+<span class="avatar a{{ nombre | length % 6 }}" aria-hidden="true">{{ (nombre.split() | map("first") | list)[:2] | join | upper }}</span>
+{%- endmacro %}
+
+
+{% macro campo(nombre, etiqueta, valor, errores, tipo="text", ayuda="", requerido=False, extra="") -%}
+<label class="campo {{ 'con-error' if errores.get(nombre) }}">
+  <span class="etiqueta-campo">{{ etiqueta }}{% if requerido %} <i>*</i>{% endif %}</span>
+  <input type="{{ tipo }}" name="{{ nombre }}" value="{{ valor if valor is not none else '' }}" {{ 'required' if requerido }} {{ extra | safe }}>
+  {% if errores.get(nombre) %}<span class="error-campo">{{ errores[nombre] }}</span>
+  {% elif ayuda %}<span class="ayuda">{{ ayuda }}</span>{% endif %}
+</label>
+{%- endmacro %}
+
+
+{% macro vacio(titulo, texto="") -%}
+<div class="vacio">
+  {{ icono("buscar") }}
+  <b>{{ titulo }}</b>
+  {% if texto %}<p>{{ texto }}</p>{% endif %}
+</div>
+{%- endmacro %}
